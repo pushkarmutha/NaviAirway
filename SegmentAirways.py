@@ -10,6 +10,14 @@ from func.model_run import semantic_segment_crop_and_cat
 from func.post_process import post_process
 from func.ulti import load_one_CT_img
 
+def read_and_reorient(image_path):
+    image = sitk.ReadImage(image_path)
+
+    reoriented_image = sitk.DICOMOrient(image, 'LPS')
+    # Save or return the reoriented image
+    sitk.WriteImage(reoriented_image, image_path)
+    return reoriented_image
+
 def getdirs(path_to_folder):
     return [f.name for f in os.scandir(path_to_folder) if f.is_dir()]
 
@@ -24,7 +32,7 @@ def bbox2_3D(mask):
     return rmin, rmax, cmin, cmax, zmin, zmax
 
 def segmentAirway(raw_img_path, lung_path, savepath):
-    sitkim = sitk.ReadImage(raw_img_path)
+    sitkim = read_and_reorient(raw_img_path)
     if os.path.isfile(Lung_path)==False:
         lm = mask.apply(sitkim)
         lmg = sitk.GetImageFromArray(np.uint8(lm>0))
