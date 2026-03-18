@@ -1,16 +1,9 @@
-#!/usr/bin/env python3
-# -*- coding: utf-8 -*-
-"""
-Created on Wed Oct  5 17:43:45 2022
-
-@author: 4o4notfound
-"""
-
 import numpy as np
 import torch
 import SimpleITK as sitk
 import os
-from lungmask import mask as LMInferer
+from lungmask import mask
+from os.path import join
 
 from func.model_arch import SegAirwayModel
 from func.model_run import semantic_segment_crop_and_cat
@@ -31,15 +24,14 @@ def bbox2_3D(mask):
     return rmin, rmax, cmin, cmax, zmin, zmax
 
 def segmentAirway(raw_img_path, lung_path, savepath):
+    sitkim = sitk.ReadImage(raw_img_path)
+    if os.path.isfile(Lung_path)==False:
+        lm = mask.apply(sitkim)
+        lmg = sitk.GetImageFromArray(np.uint8(lm>0))
+        lmg.CopyInformation(sitkim)
+        sitk.WriteImage(lmg, Lung_path)
+
     in_img = load_one_CT_img(raw_img_path)
-    if os.path.isfile(lung_path) == False:
-        inferer = LMInferer()
-        raw_img = sitk.ReadImage(raw_img_path)
-        segmentation = inferer.apply(raw_img)
-        segmentation = np.uint8(segmentation>0)
-        lungmask = sitk.GetImageFromArray(segmentation)
-        lungmask.CopyInformation(raw_img)
-        sitk.WriteImage(lungmask, lung_path)
     lmg = load_one_CT_img(lung_path)
     rmin, rmax, cmin, cmax, zmin, zmax = bbox2_3D(lmg)
     raw_img = in_img[rmin:rmax, cmin:cmax, zmin:zmax]
@@ -59,9 +51,9 @@ def segmentAirway(raw_img_path, lung_path, savepath):
 #
     op = np.zeros_like(lmg)
     op[rmin:rmax, cmin:cmax, zmin:zmax] = seg_processed
-    zz = sitk.GetImageFromArray(np.uint8(op>0))
-    zz.CopyInformation(sitkim)
-    sitk.WriteImage(zz, savepath)
+    outimage = sitk.GetImageFromArray(np.uint8(op>0))
+    outimage.CopyInformation(sitkim)
+    sitk.WriteImage(outimage, savepath)
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 threshold = 0.5
